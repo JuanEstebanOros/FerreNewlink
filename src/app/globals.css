@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  --background: oklch(98% 0.006 95);
+  --foreground: oklch(22% 0.03 255);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-public-sans);
+  --font-heading: var(--font-space-grotesk);
+  --font-mono: var(--font-geist-mono);
+
+  --color-brand-bg: oklch(98% 0.006 95);
+  --color-brand-bg2: oklch(96% 0.012 90);
+  --color-brand-ink: oklch(22% 0.03 255);
+  --color-brand-ink-soft: oklch(46% 0.03 255);
+  --color-brand-line: oklch(89% 0.012 90);
+
+  --color-brand-orange: oklch(68% 0.19 45);
+  --color-brand-orange-dark: oklch(58% 0.19 45);
+  --color-brand-orange-light: oklch(96% 0.03 55);
+  --color-brand-blue: oklch(42% 0.13 255);
+  --color-brand-blue-dark: oklch(30% 0.11 255);
+  --color-brand-blue-light: oklch(94% 0.02 255);
+}
+
+@keyframes wa-pulse {
+  0% {
+    box-shadow: 0 0 0 0 oklch(58% 0.19 145 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 16px oklch(58% 0.19 145 / 0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-public-sans), Arial, Helvetica, sans-serif;
+}

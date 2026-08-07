@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String    @default("")
+  products    Product[]
+  createdAt   DateTime  @default(now())
+}
+
+model Product {
+  id               String      @id @default(cuid())
+  meliItemId       String?     @unique
+  name             String
+  description      String
+  priceUsd         Float
+  originalPriceUsd Float?
+  stock            Int         @default(0)
+  imageUrl         String?
+  active           Boolean     @default(true)
+  featured         Boolean     @default(false)
+  onSale           Boolean     @default(false)
+  categoryId       String
+  category         Category    @relation(fields: [categoryId], references: [id])
+  orderItems       OrderItem[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model Order {
+  id                  String      @id @default(cuid())
+  customerName        String
+  customerPhone       String
+  currency            String
+  exchangeRateAtOrder Float
+  totalUsd            Float
+  status              String      @default("pending")
+  items               OrderItem[]
+  customerId          String?
+  customer            Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdAt           DateTime    @default(now())
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName  String
+  qty          Int
+  unitPriceUsd Float
+}
+
+model Settings {
+  id              String  @id @default(cuid())
+  exchangeRate    Float   @default(40)
+  whatsappNumber  String  @default("+573108264892")
+  storeAddress    String  @default("Cra. 45 #12-30, Barrio Industrial, Bogota, Colombia")
+  storePhone      String  @default("+57 601 555 0192")
+  instagramUrl    String?
+  linkedinUrl     String?
+  mercadolibreUrl String?
+  tiktokUrl       String?
+  facebookUrl     String?
+  contactEmail    String?
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  isAdmin      Boolean  @default(false)
+  orders       Order[]
+  createdAt    DateTime @default(now())
+}

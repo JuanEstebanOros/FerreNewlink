@@ -44,6 +44,7 @@ next-env.d.ts
 /src/generated/prisma
 /dev.db
 /dev.db-journal
+/prisma/sqlite-export.json
 
 # uploads
 /public/uploads/*

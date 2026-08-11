@@ -60,7 +60,7 @@ export function ContactSection() {
     <section id="contacto" ref={ref} className="bg-brand-bg2 px-4 py-24 sm:px-8">
       <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
         <div style={revealStyle(revealed, 0, 24)}>
-          <div className="mb-2.5 text-[13px] font-bold tracking-wide text-brand-orange">COTIZACIÓN</div>
+          <div className="mb-2.5 text-[13px] font-bold tracking-wide text-brand-orange">CONTACTO</div>
           <h2 className="mb-4 font-heading text-[clamp(26px,3vw,36px)] font-bold tracking-[-0.02em] text-brand-ink">
             Solicita tu cotización
           </h2>

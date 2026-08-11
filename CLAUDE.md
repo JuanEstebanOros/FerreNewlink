@@ -456,6 +456,61 @@ final version simplified to always-toast-never-auto-open.
       exactly this reason.
     - See §7 item 1 for the full process and script behavior/flags — the backfill this
       technique powered is now finished (1570/1570), kept there for reference.
+18. **Product images broke on Railway; root cause was `.gitignore`, not the DB.** After
+    the Postgres migration and first successful Railway deploy, product images showed as
+    broken on the live site while working fine on localhost. Root cause: `.gitignore` had
+    `/public/uploads/*` excluding everything under uploads except `.gitkeep` — the 1570
+    real product images (written directly to disk by the MeLi image-matching scripts, see
+    item 17) never got committed to git, so Railway's build (which clones from GitHub)
+    never had them, even though `Product.imageUrl` correctly pointed at
+    `/uploads/products/<file>.jpg` in the DB and the files existed locally. Fixed by adding
+    `!/public/uploads/products/` to `.gitignore` and committing all 1570 files (~66MB, one
+    commit) — deliberately chosen over re-architecting storage, since this backfill is
+    finished, one-time content that will not change going forward, so baking it into the
+    repo/build is simpler than standing up external storage for it.
+    - **This exposed a second, separate problem**: Railway's container filesystem is
+      ephemeral across redeploys, so any *future* image uploaded via the admin panel
+      (`/admin/productos` → `POST /api/admin/upload`) would work until the next `git push`,
+      then silently vanish (file gone, `imageUrl` in the DB now pointing at nothing).
+    - **Decision: a Railway Volume, not Cloudinary/S3.** Considered both; picked a Volume
+      because the app runs as a single Railway instance (no horizontal scaling need), the
+      volume of future admin uploads is low (an internal admin panel, not user-generated
+      content at scale), and it requires no new dependency, no third-party account/API
+      keys, and no rewrite of the upload route's logic (still plain local-disk
+      `fs.writeFile`) — just a different directory. Cloudinary/S3 would only be worth the
+      added complexity if this needed a CDN, image transforms, or multi-instance scaling,
+      none of which apply here. Revisit only if one of those becomes true.
+    - **Why the volume is mounted at a separate, previously-nonexistent directory
+      (`public/uploads/runtime/`) instead of directly at `public/uploads/products/`**
+      (where the existing 1570 images and the old upload code both lived): mounting a
+      fresh volume on top of a directory that already has content baked into the image
+      raises an unresolved question — does the platform copy that existing content onto
+      the empty volume on first mount, or does the volume just shadow it with nothing?
+      Docker's own named volumes do auto-copy; there was no reliable confirmation Railway's
+      volumes behave the same way, and getting it wrong would have silently re-broken the
+      1570 images that were just fixed. Splitting the directories sidesteps the question
+      entirely: `public/uploads/products/` stays git-committed and untouched forever (the
+      historical MeLi backfill, baked into every build regardless of any volume), and
+      `public/uploads/runtime/` is a brand-new path with nothing to lose — it's expected
+      and fine for it to start empty. `POST /api/admin/upload`
+      (`src/app/api/admin/upload/route.ts`) now writes there and returns
+      `/uploads/runtime/<uuid>.<ext>`; both directories are served identically by Next's
+      normal static handling of `public/`, so no new route/rewrite code was needed. The
+      frontend (`/admin/productos`) already just stores whatever URL the upload API
+      returns in `Product.imageUrl` — it has no folder name hardcoded, so this required no
+      other changes. `.gitignore`'s existing `/public/uploads/*` wildcard already excludes
+      `public/uploads/runtime/` by default (correct — those files belong on the volume,
+      not in git).
+    - **Railway dashboard steps (manual, not something a Claude session can do):** on the
+      app service (not the Postgres one) → Volumes → add a volume → mount path
+      `/app/public/uploads/runtime` (Nixpacks' default working directory for a Next.js
+      service is `/app`; confirm against the service's deploy logs if a build ever changes
+      this) → any small size is enough for admin-uploaded product photos (a few GB headroom
+      is plenty). Triggers a redeploy of that service. No data migration needed since nothing
+      was ever expected to exist at that path before. **Status: instructions given, not yet
+      confirmed done** — verify next time this comes up, and update this note once the
+      volume is actually attached and an admin upload has been tested end-to-end on the
+      live Railway site.
 
 ## 6. Code conventions actually followed in this codebase
 
@@ -645,6 +700,18 @@ Roughly in the order they'd probably matter to the user:
    - Still open: nobody has confirmed a real deploy has gone green end-to-end yet with all
      of the above in place (build fix + preDeployCommand + real `DATABASE_URL`/
      `JWT_SECRET`) — verify on the next deploy and update this section once confirmed.
+   - **Product images were broken on the live site, now fixed (data side); a Railway
+     Volume is still pending on the infra side.** See §5 item 18 for the full story. The
+     1570 existing product images are now committed to git (`public/uploads/products/`,
+     `.gitignore` carved out an exception) so they're baked into every build — this part is
+     done and pushed. What's still pending is attaching a Railway Volume so *future*
+     admin-uploaded images (`public/uploads/runtime/`, a separate directory from the
+     git-committed one — see §5 item 18 for why they're split) survive across redeploys
+     instead of vanishing on the next `git push`. **User still needs to**, on the app
+     service in the Railway dashboard: Volumes → add one → mount path
+     `/app/public/uploads/runtime`. Nothing else needed after that (no data to migrate, no
+     env var) — confirm by uploading a product image via `/admin/productos`, redeploying
+     (even a no-op push), and checking the image still loads afterward.
 6. **Admin password already rotated by the user — nobody (including any Claude session)
    knows the current value.** This is intentional, not a gap — see §4 Auth model and
    `scripts/set-admin-password.ts`. If admin access is ever needed for a fresh session,

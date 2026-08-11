@@ -27,11 +27,16 @@ export async function POST(request: Request) {
   }
 
   const filename = `${randomUUID()}.${extension}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+  // Written to a directory separate from public/uploads/products (which holds the
+  // git-committed MeLi backfill, baked into every build) so this one can sit on a
+  // Railway Volume without any ambiguity about volume-mount seeding from image
+  // content — this path is expected to start empty. See CLAUDE.md for the full
+  // reasoning.
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "runtime");
   await mkdir(uploadDir, { recursive: true });
 
   const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(path.join(uploadDir, filename), buffer);
 
-  return NextResponse.json({ url: `/uploads/products/${filename}` });
+  return NextResponse.json({ url: `/uploads/runtime/${filename}` });
 }

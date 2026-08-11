@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { matchesSearch, searchWords } from "@/lib/search";
 
 const PAGE_SIZE = 24;
 
@@ -10,10 +11,19 @@ export async function GET(request: Request) {
   const q = searchParams.get("q") ?? "";
   const categoria = searchParams.get("categoria") ?? "";
 
-  const where = {
+  const baseWhere = {
     ...(categoria ? { category: { slug: categoria } } : {}),
-    ...(q ? { name: { contains: q } } : {}),
   };
+
+  // Mismo enfoque que /productos: SQLite no maneja tildes/mayusculas de
+  // forma nativa, normalizamos en JS sobre los candidatos de la categoria.
+  const words = q ? searchWords(q) : [];
+  let where = baseWhere as typeof baseWhere & { id?: { in: string[] } };
+  if (words.length > 0) {
+    const candidates = await prisma.product.findMany({ where: baseWhere, select: { id: true, name: true } });
+    const matchingIds = candidates.filter((p) => matchesSearch(p.name, words)).map((p) => p.id);
+    where = { ...baseWhere, id: { in: matchingIds } };
+  }
 
   const [products, total] = await Promise.all([
     prisma.product.findMany({

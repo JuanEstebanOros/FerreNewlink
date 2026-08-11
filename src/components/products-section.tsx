@@ -77,7 +77,7 @@ export function ProductsSection({
               <ProductImage
                 imageUrl={product.imageUrl}
                 name={product.name}
-                className="aspect-square w-full transition-transform duration-500 group-hover:scale-[1.06]"
+                className="aspect-square w-full border-b border-brand-line transition-transform duration-500 group-hover:scale-[1.06]"
               />
             </Link>
             <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-5">

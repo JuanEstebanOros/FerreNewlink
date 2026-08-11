@@ -1,9 +1,13 @@
 import { SignJWT, jwtVerify } from "jose";
 
 const CUSTOMER_SESSION_COOKIE = "ferre_customer_session";
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "ferre-newlink-dev-secret-change-in-production"
-);
+
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    "JWT_SECRET no esta configurado. Define esta variable de entorno (ver .env.example) antes de iniciar la app — no hay un valor por defecto por seguridad."
+  );
+}
+const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export type CustomerSession = {
   customerId: string;

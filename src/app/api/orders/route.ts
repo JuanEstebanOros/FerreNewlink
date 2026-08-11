@@ -3,7 +3,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { buildInvoiceMessage, buildWhatsappUrl } from "@/lib/whatsapp";
 import { getCustomerSession } from "@/lib/customer-session";
+import { isRateLimited, recordAttempt, getClientIp } from "@/lib/rate-limit";
 import type { Currency } from "@/lib/types";
+
+// Errores esperados/controlados por la app (stock, producto inactivo, etc.)
+// — su mensaje es seguro para mostrarle al cliente. Cualquier otra
+// excepcion (ej. un error crudo de Prisma) NO debe llegar al cliente tal
+// cual, ver el catch mas abajo.
+class OrderValidationError extends Error {}
 
 const orderSchema = z.object({
   customerName: z.string().trim().min(2).max(120),
@@ -20,6 +27,22 @@ const orderSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const rateLimitKey = `orders:${ip}`;
+  // A diferencia de login/register, aca contamos TODOS los intentos (no
+  // solo los fallidos): cada pedido creado, exitoso o no, decrementa stock
+  // real, asi que el volumen total de intentos es lo que nos importa
+  // limitar, no solo los que fallan.
+  const { limited, retryAfterSeconds } = isRateLimited(rateLimitKey, "orders");
+  if (limited) {
+    const minutes = Math.ceil(retryAfterSeconds / 60);
+    return NextResponse.json(
+      { error: `Demasiados pedidos desde esta conexion. Intenta de nuevo en ${minutes} minuto${minutes === 1 ? "" : "s"}.` },
+      { status: 429 }
+    );
+  }
+  recordAttempt(rateLimitKey);
+
   const body = await request.json().catch(() => null);
   const parsed = orderSchema.safeParse(body);
   if (!parsed.success) {
@@ -50,10 +73,10 @@ export async function POST(request: Request) {
       for (const item of items) {
         const product = productMap.get(item.productId);
         if (!product || !product.active) {
-          throw new Error(`Producto no disponible: ${item.productId}`);
+          throw new OrderValidationError(`Producto no disponible: ${item.productId}`);
         }
         if (product.stock < item.qty) {
-          throw new Error(`Stock insuficiente para ${product.name}`);
+          throw new OrderValidationError(`Stock insuficiente para ${product.name}`);
         }
         totalUsd += product.priceUsd * item.qty;
         orderItemsData.push({
@@ -104,7 +127,13 @@ export async function POST(request: Request) {
       whatsappUrl: buildWhatsappUrl(whatsappNumber, message),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo crear el pedido.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    if (error instanceof OrderValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    // Cualquier otra excepcion (error crudo de Prisma, de conexion, etc.) no
+    // se le muestra al cliente tal cual — solo un mensaje generico. El
+    // detalle real queda en el log del servidor para poder diagnosticarlo.
+    console.error("[orders] error inesperado creando pedido:", error);
+    return NextResponse.json({ error: "No se pudo crear el pedido. Intenta de nuevo." }, { status: 500 });
   }
 }

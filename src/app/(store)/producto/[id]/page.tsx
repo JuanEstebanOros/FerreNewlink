@@ -17,7 +17,11 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
     <div className="mx-auto max-w-5xl px-4 pb-10 pt-28">
       <BackToProducts />
       <div className="grid gap-10 md:grid-cols-2">
-        <ProductImage imageUrl={product.imageUrl} name={product.name} className="aspect-square w-full rounded-2xl" />
+        <ProductImage
+          imageUrl={product.imageUrl}
+          name={product.name}
+          className="aspect-square w-full rounded-2xl border border-gray-100"
+        />
 
         <div className="flex flex-col gap-4">
           <span className="w-fit rounded-full bg-brand-blue-light px-3 py-1 text-xs font-semibold text-brand-blue-dark">

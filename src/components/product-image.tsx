@@ -12,8 +12,8 @@ export function ProductImage({
 }) {
   if (imageUrl) {
     return (
-      <div className={`relative overflow-hidden bg-brand-orange-light ${className ?? ""}`}>
-        <Image src={imageUrl} alt={name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+      <div className={`relative overflow-hidden bg-[#F5F5F5] ${className ?? ""}`}>
+        <Image src={imageUrl} alt={name} fill className="object-contain" sizes="(max-width: 768px) 100vw, 33vw" />
       </div>
     );
   }

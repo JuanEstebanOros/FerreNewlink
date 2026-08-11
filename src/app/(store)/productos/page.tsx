@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ProductCard } from "@/components/product-card";
 import { ProductFilters } from "@/components/product-filters";
 import { Pagination } from "@/components/pagination";
+import { matchesSearch, searchWords } from "@/lib/search";
 
 const PAGE_SIZE = 24;
 
@@ -13,11 +14,23 @@ export default async function ProductosPage({
   const { categoria, q, pagina } = await searchParams;
   const page = Math.max(1, Number(pagina) || 1);
 
-  const where = {
+  const baseWhere = {
     active: true,
     ...(categoria ? { category: { slug: categoria } } : {}),
-    ...(q ? { name: { contains: q } } : {}),
   };
+
+  // SQLite no soporta comparaciones insensibles a mayusculas/tildes de forma
+  // nativa (ni el `mode: "insensitive"` de Prisma, que solo aplica a
+  // Postgres/MySQL/Mongo). Con ~1570 productos, es mas simple y portable
+  // traer los nombres candidatos y filtrar en JS ya normalizados, en vez de
+  // mantener una columna de busqueda duplicada sincronizada a mano.
+  const words = q ? searchWords(q) : [];
+  let where = baseWhere as typeof baseWhere & { id?: { in: string[] } };
+  if (words.length > 0) {
+    const candidates = await prisma.product.findMany({ where: baseWhere, select: { id: true, name: true } });
+    const matchingIds = candidates.filter((p) => matchesSearch(p.name, words)).map((p) => p.id);
+    where = { ...baseWhere, id: { in: matchingIds } };
+  }
 
   const [categories, products, total] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: "asc" } }),

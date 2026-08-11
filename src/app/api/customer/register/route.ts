@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { signCustomerSession, CUSTOMER_SESSION_COOKIE } from "@/lib/auth";
+import { isRateLimited, recordFailedAttempt, getClientIp } from "@/lib/rate-limit";
 
 const registerSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -12,14 +13,26 @@ const registerSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const rateLimitKey = `register:${getClientIp(request)}`;
+  const { limited, retryAfterSeconds } = isRateLimited(rateLimitKey, "register");
+  if (limited) {
+    const minutes = Math.ceil(retryAfterSeconds / 60);
+    return NextResponse.json(
+      { error: `Demasiados intentos. Intenta de nuevo en ${minutes} minuto${minutes === 1 ? "" : "s"}.` },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {
+    recordFailedAttempt(rateLimitKey);
     return NextResponse.json({ error: "Datos invalidos. La contrasena debe tener al menos 6 caracteres." }, { status: 400 });
   }
 
   const existing = await prisma.customer.findUnique({ where: { email: parsed.data.email } });
   if (existing) {
+    recordFailedAttempt(rateLimitKey);
     return NextResponse.json({ error: "Ya existe una cuenta con ese correo." }, { status: 409 });
   }
 

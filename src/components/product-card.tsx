@@ -29,7 +29,11 @@ export function ProductCard({ product }: { product: ProductCardData }) {
           OFERTA
         </span>
       )}
-      <ProductImage imageUrl={product.imageUrl} name={product.name} className="aspect-square w-full" />
+      <ProductImage
+        imageUrl={product.imageUrl}
+        name={product.name}
+        className="aspect-square w-full border-b border-gray-100"
+      />
       <div className="flex flex-1 flex-col gap-1 p-4">
         <span className="text-xs font-medium uppercase tracking-wide text-brand-blue/70">
           {product.category.name}

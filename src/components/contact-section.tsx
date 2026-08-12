@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Mail, MessageCircle } from "lucide-react";
 import { useReveal, revealStyle } from "@/hooks/useReveal";
 import { useSiteSettings } from "@/context/site-settings-context";
 import { buildWhatsappUrl, DEFAULT_WHATSAPP_MESSAGE } from "@/lib/whatsapp";
@@ -40,19 +40,28 @@ export function ContactSection() {
     },
   ].filter((s): s is typeof s & { href: string } => Boolean(s.href));
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const message = [
-      "*Solicitud de cotización - Ferre NewLink*",
+  function buildQuoteLines(): string[] {
+    return [
       `Nombre: ${nombre}`,
       `Teléfono: ${telefono}`,
       `Categoría de interés: ${categoria}`,
       mensaje ? `Mensaje: ${mensaje}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n");
+    ].filter((line): line is string => Boolean(line));
+  }
 
+  function handleSendWhatsapp(e: React.FormEvent) {
+    e.preventDefault();
+    const message = ["*Solicitud de cotización - Ferre NewLink*", ...buildQuoteLines()].join("\n");
     window.open(buildWhatsappUrl(settings.whatsappNumber, message), "_blank");
+    setSent(true);
+  }
+
+  function handleSendEmail(e: React.MouseEvent) {
+    e.preventDefault();
+    const to = settings.contactEmail ?? "contacto@ferrenewlink.com";
+    const subject = "Solicitud de cotización - Ferre NewLink";
+    const body = buildQuoteLines().join("\n");
+    window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     setSent(true);
   }
 
@@ -99,15 +108,13 @@ export function ContactSection() {
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-orange text-white">
                 <Check className="h-5 w-5" />
               </div>
-              <div className="mb-2 font-heading text-lg font-semibold text-brand-ink">
-                ¡Listo! Te llevamos a WhatsApp
-              </div>
+              <div className="mb-2 font-heading text-lg font-semibold text-brand-ink">¡Listo!</div>
               <div className="text-sm text-brand-ink-soft">
-                Si no se abrió automáticamente, escríbenos directo por WhatsApp.
+                Si no se abrió automáticamente, escríbenos directo por WhatsApp o correo.
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleSendWhatsapp} className="flex flex-col gap-4">
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-brand-ink-soft">Nombre</label>
                 <input
@@ -154,12 +161,23 @@ export function ContactSection() {
                   className="w-full resize-y rounded-lg border border-brand-line px-3.5 py-3 text-[15px] focus:border-brand-blue focus:outline-none"
                 />
               </div>
-              <button
-                type="submit"
-                className="mt-1.5 rounded-lg bg-brand-orange py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-orange-dark"
-              >
-                Enviar por WhatsApp
-              </button>
+              <div className="mt-1.5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={handleSendEmail}
+                  className="flex items-center justify-center gap-2 rounded-lg border-[1.5px] border-brand-blue py-3.5 text-[15px] font-bold text-brand-blue transition-colors hover:bg-brand-blue hover:text-white"
+                >
+                  <Mail className="h-4 w-4" />
+                  Enviar por correo
+                </button>
+                <button
+                  type="submit"
+                  className="flex items-center justify-center gap-2 rounded-lg bg-brand-orange py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-orange-dark"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Enviar por WhatsApp
+                </button>
+              </div>
             </form>
           )}
         </div>

@@ -39,6 +39,8 @@ model Order {
   id                  String      @id @default(cuid())
   customerName        String
   customerPhone       String
+  customerDocumentId  String?
+  customerEmail       String?
   currency            String
   exchangeRateAtOrder Float
   totalUsd            Float

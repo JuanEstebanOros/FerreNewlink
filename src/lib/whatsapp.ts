@@ -11,20 +11,35 @@ export function buildInvoiceMessage(params: {
   orderId: string;
   customerName: string;
   customerPhone: string;
+  customerDocumentId: string;
+  customerEmail: string;
   items: InvoiceItem[];
   totalUsd: number;
   currency: Currency;
   exchangeRate: number;
   createdAt: Date;
 }): string {
-  const { orderId, customerName, customerPhone, items, totalUsd, currency, exchangeRate, createdAt } = params;
+  const {
+    orderId,
+    customerName,
+    customerPhone,
+    customerDocumentId,
+    customerEmail,
+    items,
+    totalUsd,
+    currency,
+    exchangeRate,
+    createdAt,
+  } = params;
 
   const lines = [
     "*Nuevo pedido - Ferre NewLink*",
     `Pedido: #${orderId.slice(-8).toUpperCase()}`,
     `Fecha: ${createdAt.toLocaleString("es-VE")}`,
     `Cliente: ${customerName}`,
+    `Cedula/Documento: ${customerDocumentId}`,
     `Telefono: ${customerPhone}`,
+    `Email: ${customerEmail}`,
     "",
     "*Productos:*",
     ...items.map(

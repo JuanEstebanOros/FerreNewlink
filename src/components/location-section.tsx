@@ -4,7 +4,7 @@ import { useReveal, revealStyle } from "@/hooks/useReveal";
 import { useSiteSettings } from "@/context/site-settings-context";
 
 const HOURS = [
-  { day: "Lunes a viernes", time: "8:00am – 5:00pm" },
+  { day: "Lunes a viernes", time: "8:00am – 12:00pm y 1:00pm – 5:00pm" },
   { day: "Sábado", time: "8:00am – 2:00pm" },
   { day: "Domingo", time: "Cerrado" },
 ];
@@ -43,7 +43,9 @@ export function LocationSection() {
             {HOURS.map((h) => (
               <div key={h.day} className="flex justify-between text-sm">
                 <span className="text-brand-ink-soft">{h.day}</span>
-                <span className="font-semibold text-brand-ink">{h.time}</span>
+                <span className={`font-semibold ${h.day === "Domingo" ? "text-red-600" : "text-brand-ink"}`}>
+                  {h.time}
+                </span>
               </div>
             ))}
           </div>

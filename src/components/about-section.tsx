@@ -52,6 +52,17 @@ export function AboutSection() {
             </p>
           </div>
 
+          <div className="mb-6 max-w-md">
+            <div className="mb-2 text-[13px] font-bold tracking-wide text-brand-orange">VISIÓN</div>
+            <p className="text-sm leading-relaxed text-white/85 text-pretty">
+              Consolidarnos como la empresa líder en el mundo ferretero a nivel nacional, siendo reconocidos
+              por nuestra innovación constante, la excelencia en el servicio al cliente y nuestra capacidad
+              de adaptación a las nuevas tecnologías del sector. Aspiramos a construir relaciones de
+              confianza duraderas con nuestros aliados comerciales y ser el motor que impulse el crecimiento
+              en la región.
+            </p>
+          </div>
+
           <div className="flex flex-col gap-3.5">
             {CHECK_ITEMS.map((item) => (
               <div key={item} className="flex items-center gap-3">

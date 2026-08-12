@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { buildInvoiceMessage, buildWhatsappUrl } from "@/lib/whatsapp";
+import { sendOrderNotificationEmail } from "@/lib/email";
 import { getCustomerSession } from "@/lib/customer-session";
 import { isRateLimited, recordAttempt, getClientIp } from "@/lib/rate-limit";
 import type { Currency } from "@/lib/types";
@@ -15,6 +16,8 @@ class OrderValidationError extends Error {}
 const orderSchema = z.object({
   customerName: z.string().trim().min(2).max(120),
   customerPhone: z.string().trim().min(6).max(30),
+  customerDocumentId: z.string().trim().min(5).max(20),
+  customerEmail: z.string().trim().email().max(120),
   currency: z.enum(["USD", "VES"]),
   items: z
     .array(
@@ -48,7 +51,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Datos de pedido invalidos." }, { status: 400 });
   }
-  const { customerName, customerPhone, currency, items } = parsed.data;
+  const { customerName, customerPhone, customerDocumentId, customerEmail, currency, items } = parsed.data;
   const customerSession = await getCustomerSession();
 
   const settings = await prisma.settings.findFirst();
@@ -91,6 +94,8 @@ export async function POST(request: Request) {
         data: {
           customerName,
           customerPhone,
+          customerDocumentId,
+          customerEmail,
           currency,
           exchangeRateAtOrder: exchangeRate,
           totalUsd,
@@ -115,11 +120,30 @@ export async function POST(request: Request) {
       orderId: result.id,
       customerName,
       customerPhone,
+      customerDocumentId,
+      customerEmail,
       items: result.items.map((i) => ({ name: i.productName, qty: i.qty, unitPriceUsd: i.unitPriceUsd })),
       totalUsd: result.totalUsd,
       currency: currency as Currency,
       exchangeRate,
       createdAt: result.createdAt,
+    });
+
+    // Disparado sin esperar: un problema con Gmail no debe tumbar una venta
+    // real ni hacer esperar al cliente. Cualquier error queda solo en el log.
+    sendOrderNotificationEmail({
+      orderId: result.id,
+      customerName,
+      customerPhone,
+      customerDocumentId,
+      customerEmail,
+      items: result.items.map((i) => ({ name: i.productName, qty: i.qty, unitPriceUsd: i.unitPriceUsd })),
+      totalUsd: result.totalUsd,
+      currency: currency as Currency,
+      exchangeRate,
+      createdAt: result.createdAt,
+    }).catch((error) => {
+      console.error("[orders] error enviando email de notificacion:", error);
     });
 
     return NextResponse.json({

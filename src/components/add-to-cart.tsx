@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useCurrency } from "@/context/currency-context";
+import { useCustomerAuth } from "@/context/customer-context";
 
 export function AddToCart({
   productId,
@@ -23,8 +25,20 @@ export function AddToCart({
   const [qty, setQty] = useState(1);
   const { addItem } = useCart();
   const { format } = useCurrency();
+  const { customer } = useCustomerAuth();
 
   const outOfStock = stock === 0;
+
+  if (!customer) {
+    return (
+      <Link
+        href="/ingresar"
+        className="flex w-fit items-center justify-center rounded-full border-[1.5px] border-brand-blue px-6 py-3 font-semibold text-brand-blue transition-colors hover:bg-brand-blue hover:text-white"
+      >
+        Inicia sesión para ver precio
+      </Link>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">

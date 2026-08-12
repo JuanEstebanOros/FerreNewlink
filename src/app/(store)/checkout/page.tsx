@@ -8,13 +8,27 @@ import { useCurrency } from "@/context/currency-context";
 import { useCustomerAuth } from "@/context/customer-context";
 import { ProductImage } from "@/components/product-image";
 
+const COUNTRY_CODES = [
+  { code: "+58", label: "🇻🇪 +58 (Venezuela)" },
+  { code: "+57", label: "🇨🇴 +57 (Colombia)" },
+  { code: "+1", label: "🇺🇸 +1 (EE. UU.)" },
+  { code: "+34", label: "🇪🇸 +34 (España)" },
+  { code: "+51", label: "🇵🇪 +51 (Perú)" },
+  { code: "+593", label: "🇪🇨 +593 (Ecuador)" },
+  { code: "+507", label: "🇵🇦 +507 (Panamá)" },
+  { code: "+52", label: "🇲🇽 +52 (México)" },
+];
+
 export default function CheckoutPage() {
   const { items, totalUsd, clear } = useCart();
   const { currency, format } = useCurrency();
   const { customer } = useCustomerAuth();
 
   const [customerName, setCustomerName] = useState(() => customer?.name ?? "");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [countryCode, setCountryCode] = useState(COUNTRY_CODES[0].code);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [customerDocumentId, setCustomerDocumentId] = useState("");
+  const [customerEmail, setCustomerEmail] = useState(() => customer?.email ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
@@ -30,7 +44,9 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerName,
-          customerPhone,
+          customerPhone: `${countryCode} ${phoneNumber}`.trim(),
+          customerDocumentId,
+          customerEmail,
           currency,
           items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
         }),
@@ -132,14 +148,48 @@ export default function CheckoutPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Telefono</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Cedula / Documento</label>
             <input
               required
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
+              value={customerDocumentId}
+              onChange={(e) => setCustomerDocumentId(e.target.value)}
               className="w-full rounded-lg border border-gray-200 px-3 py-2.5 focus:border-brand-blue focus:outline-none"
-              placeholder="Ej: +58 412 1234567"
+              placeholder="Ej: V-12345678"
             />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
+            <input
+              required
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2.5 focus:border-brand-blue focus:outline-none"
+              placeholder="Ej: correo@ejemplo.com"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Telefono</label>
+            <div className="flex gap-2">
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="w-32 shrink-0 rounded-lg border border-gray-200 px-2 py-2.5 text-sm focus:border-brand-blue focus:outline-none"
+              >
+                {COUNTRY_CODES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                required
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 focus:border-brand-blue focus:outline-none"
+                placeholder="Ej: 412 1234567"
+              />
+            </div>
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}

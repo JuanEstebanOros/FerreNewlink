@@ -47,7 +47,7 @@ export function Header() {
           <Menu className="h-5 w-5" />
         </button>
         <Link href="/" className="flex items-center">
-          <Image src="/ferre-logo.png" alt="Ferre NewLink" width={465} height={168} className="h-10 w-auto sm:h-11" priority />
+          <Image src="/ferre-logo.png" alt="Ferre NewLink" width={465} height={168} className="h-12 w-auto sm:h-14" priority />
         </Link>
       </div>
 
@@ -141,7 +141,7 @@ export function Header() {
           />
           <div className="relative flex h-full w-full max-w-xs flex-col bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-              <Image src="/ferre-logo.png" alt="Ferre NewLink" width={465} height={168} className="h-8 w-auto" />
+              <Image src="/ferre-logo.png" alt="Ferre NewLink" width={465} height={168} className="h-9 w-auto" />
               <button
                 onClick={() => setMenuOpen(false)}
                 aria-label="Cerrar"

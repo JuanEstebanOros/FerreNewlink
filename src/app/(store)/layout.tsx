@@ -4,9 +4,11 @@ import { Providers } from "@/app/providers";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { FloatingWhatsapp } from "@/components/floating-whatsapp";
+import { FloatingDirectionsButton } from "@/components/floating-directions-button";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartToast } from "@/components/cart-toast";
 import { NavHistoryBaseline } from "@/components/nav-history-baseline";
+import { IdleLogout } from "@/components/idle-logout";
 import { getCustomerSession } from "@/lib/customer-session";
 
 const spaceGrotesk = Space_Grotesk({
@@ -66,10 +68,12 @@ export default async function StoreLayout({ children }: { children: React.ReactN
           contactEmail: settings.contactEmail,
         }}
       >
+        {customerSession && <IdleLogout />}
         <Header />
         <main className="flex-1">{children}</main>
         <Footer categories={categories} />
         <FloatingWhatsapp />
+        <FloatingDirectionsButton />
         <CartDrawer />
         <CartToast />
       </Providers>

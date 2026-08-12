@@ -1,19 +1,17 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { formatPrice } from "@/lib/currency";
 import type { Currency } from "@/lib/types";
 import type { InvoiceItem } from "@/lib/whatsapp";
 
 const ORDER_NOTIFICATION_EMAIL = "importferrenewlink@gmail.com";
+// Dominio de pruebas de Resend, no requiere verificar un dominio propio.
+// Cambiar a un correo de ferrenewlink.com una vez se verifique el dominio.
+const FROM_EMAIL = "onboarding@resend.dev";
 
-function getTransporter() {
-  const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
-  if (!user || !pass) return null;
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user, pass },
-  });
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  return new Resend(apiKey);
 }
 
 export async function sendOrderNotificationEmail(params: {
@@ -28,9 +26,9 @@ export async function sendOrderNotificationEmail(params: {
   exchangeRate: number;
   createdAt: Date;
 }) {
-  const transporter = getTransporter();
-  if (!transporter) {
-    console.warn("[email] GMAIL_USER/GMAIL_APP_PASSWORD no configurados, se omite el correo de notificacion.");
+  const resend = getResendClient();
+  if (!resend) {
+    console.warn("[email] RESEND_API_KEY no configurada, se omite el correo de notificacion.");
     return;
   }
 
@@ -73,10 +71,14 @@ export async function sendOrderNotificationEmail(params: {
     `Moneda seleccionada por el cliente: ${currency}`,
   ].join("\n");
 
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
     to: ORDER_NOTIFICATION_EMAIL,
     subject: `Nuevo pedido #${orderId.slice(-8).toUpperCase()} - Ferre NewLink`,
     text,
   });
+
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
 }

@@ -13,14 +13,16 @@ export default async function AdminReportesPage() {
 
   const [recentOrders, orderItems, statusGroups] = await Promise.all([
     prisma.order.findMany({
-      where: { createdAt: { gte: since }, status: { not: "cancelled" } },
+      where: { createdAt: { gte: since }, status: { not: "cancelled" }, deletedAt: null },
       select: { createdAt: true, totalUsd: true },
     }),
     prisma.orderItem.findMany({
+      where: { order: { deletedAt: null } },
       select: { productName: true, qty: true },
     }),
     prisma.order.groupBy({
       by: ["status"],
+      where: { deletedAt: null },
       _count: { _all: true },
     }),
   ]);

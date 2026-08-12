@@ -20,7 +20,7 @@ export default async function MisPedidosPage() {
   if (!session) redirect("/ingresar");
 
   const orders = await prisma.order.findMany({
-    where: { customerId: session.customerId },
+    where: { customerId: session.customerId, deletedAt: null },
     include: { items: true },
     orderBy: { createdAt: "desc" },
   });

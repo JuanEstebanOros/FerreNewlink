@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 
 type OrderItem = {
   id: string;
@@ -61,6 +61,12 @@ export default function AdminPedidosPage() {
     if (res.ok) load();
   }
 
+  async function handleDelete(id: string) {
+    if (!confirm("¿Eliminar este pedido? Se ocultara de la lista pero se conservara en el historial.")) return;
+    const res = await fetch(`/api/admin/pedidos/${id}`, { method: "DELETE" });
+    if (res.ok) load();
+  }
+
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold text-brand-blue-dark">Pedidos</h1>
@@ -75,18 +81,19 @@ export default function AdminPedidosPage() {
               <th className="px-4 py-3">Total</th>
               <th className="px-4 py-3">Estado</th>
               <th className="px-4 py-3">Cambiar estado</th>
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
+                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
                   Cargando...
                 </td>
               </tr>
             ) : orders.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
+                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
                   Aun no hay pedidos.
                 </td>
               </tr>
@@ -132,10 +139,19 @@ export default function AdminPedidosPage() {
                         <option value="cancelled">Cancelado</option>
                       </select>
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => handleDelete(order.id)}
+                        className="text-gray-400 hover:text-red-500"
+                        title="Eliminar pedido"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                   {expandedId === order.id && (
                     <tr>
-                      <td colSpan={6} className="bg-gray-50 px-4 py-3">
+                      <td colSpan={7} className="bg-gray-50 px-4 py-3">
                         <ul className="space-y-1 text-sm text-gray-600">
                           {order.items.map((item) => (
                             <li key={item.id}>

@@ -5,8 +5,8 @@ const LOW_STOCK_THRESHOLD = 5;
 
 export default async function AdminDashboardPage() {
   const [totalSalesAgg, pendingOrders, lowStockProducts, totalProducts] = await Promise.all([
-    prisma.order.aggregate({ _sum: { totalUsd: true }, where: { status: { not: "cancelled" } } }),
-    prisma.order.count({ where: { status: "pending" } }),
+    prisma.order.aggregate({ _sum: { totalUsd: true }, where: { status: { not: "cancelled" }, deletedAt: null } }),
+    prisma.order.count({ where: { status: "pending", deletedAt: null } }),
     prisma.product.count({ where: { stock: { lt: LOW_STOCK_THRESHOLD }, active: true } }),
     prisma.product.count({ where: { active: true } }),
   ]);

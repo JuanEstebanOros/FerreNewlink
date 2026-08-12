@@ -3,7 +3,7 @@ import { formatPrice } from "@/lib/currency";
 import type { Currency } from "@/lib/types";
 import type { InvoiceItem } from "@/lib/whatsapp";
 
-const ORDER_NOTIFICATION_EMAIL = "importferrenewlink@gmail.com";
+const ORDER_NOTIFICATION_EMAIL = "imporferrenewlink@gmail.com";
 // Dominio de pruebas de Resend, no requiere verificar un dominio propio.
 // Cambiar a un correo de ferrenewlink.com una vez se verifique el dominio.
 const FROM_EMAIL = "onboarding@resend.dev";
